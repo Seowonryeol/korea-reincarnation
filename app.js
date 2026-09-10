@@ -114,13 +114,40 @@ function initRealLeafletMap() {
   // 대한민국 전체(서울~제주, 독도)가 한눈에 들어오도록 뷰포트 고정
   leafletMap.fitBounds(KOREA_BOUNDS, { padding: [8, 8] });
 
-  // 창 크기 변경 시에도 대한민국 전도 비율 유지
+  // 창 크기 변경 시 지도 위치(모바일 슬롯 vs 데스크톱 슬롯) 및 전도 뷰포트 갱신
   window.addEventListener('resize', () => {
+    updateMapPlacement();
     if (leafletMap) {
       leafletMap.invalidateSize();
       leafletMap.fitBounds(KOREA_BOUNDS, { padding: [8, 8] });
     }
   });
+}
+
+/**
+ * 화면 너비(모바일 < 1024px vs 데스크톱 >= 1024px)에 따라 지도 위치 재배치
+ * 모바일: 스토리텔링과 5단 상세특징 설명 사이(#map-slot-mobile)로 이동
+ * 데스크톱: 우측 5열 최근 환생 이력 위(#map-slot-desktop)로 이동
+ */
+function updateMapPlacement() {
+  const isMobile = window.innerWidth < 1024;
+  const mapCard = document.getElementById('section-map');
+  const mobileSlot = document.getElementById('map-slot-mobile');
+  const desktopSlot = document.getElementById('map-slot-desktop');
+
+  if (!mapCard || !mobileSlot || !desktopSlot) return;
+
+  const targetSlot = isMobile ? mobileSlot : desktopSlot;
+
+  if (mapCard.parentElement !== targetSlot) {
+    targetSlot.appendChild(mapCard);
+    if (leafletMap) {
+      setTimeout(() => {
+        leafletMap.invalidateSize();
+        leafletMap.fitBounds(KOREA_BOUNDS, { padding: [8, 8] });
+      }, 50);
+    }
+  }
 }
 
 /**
@@ -411,13 +438,16 @@ function setupStickyHeader() {
 
 // 초기화
 window.addEventListener('DOMContentLoaded', () => {
-  // 1. Leaflet 실제 지도 초기화
+  // 1. 화면 규격(모바일 vs 데스크톱)에 따른 지도 위치 슬롯 배치
+  updateMapPlacement();
+
+  // 2. Leaflet 실제 지도 초기화
   initRealLeafletMap();
 
-  // 2. 상단 고정 출생지 바 스크롤 감지 초기화
+  // 3. 상단 고정 출생지 바 스크롤 감지 초기화
   setupStickyHeader();
 
-  // 3. 초기 환생 1회 실행
+  // 4. 초기 환생 1회 실행
   doReincarnate();
 
   // 환생 & 공유 버튼 리스너 (데스크톱 및 모바일 하단 플로팅 바 동시 바인딩)

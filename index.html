@@ -132,6 +132,9 @@
             </p>
           </div>
 
+          <!-- 모바일 전용 지도 슬롯 (스토리텔링과 5단 상세특징 설명 사이) -->
+          <div id="map-slot-mobile" class="block lg:hidden mb-4 sm:mb-5"></div>
+
           <!-- Stats Grid -->
           <div id="res-stats" class="space-y-2 sm:space-y-2.5 mb-5 sm:mb-6">
             <!-- JS 동적 렌더링 -->
@@ -160,27 +163,30 @@
       <!-- [우측 5열]: 대한민국 전도 고정 지도 + 최근 환생 이력 (지도가 최근 이력 바로 위에 위치) -->
       <div class="lg:col-span-5 flex flex-col gap-4">
         
-        <!-- 대한민국 실제 지리 전도 카드 (고정 뷰 & 마커만 이동) -->
-        <div id="section-map" class="glass-card rounded-3xl p-4 sm:p-5 flex flex-col items-center">
-          
-          <div class="w-full flex items-center justify-between mb-2.5 border-b border-slate-800 pb-2.5">
-            <div class="flex items-center gap-2">
-              <span id="map-status-dot" class="inline-block w-2.5 h-2.5 rounded-full bg-pink-500 shadow-[0_0_10px_#ec4899] animate-pulse"></span>
-              <h3 class="text-xs sm:text-sm font-black text-slate-100">대한민국 전도 출생 위치</h3>
+        <!-- 데스크톱용 지도 슬롯 (기본 위치) -->
+        <div id="map-slot-desktop" class="w-full flex flex-col">
+          <!-- 대한민국 실제 지리 전도 카드 (고정 뷰 & 마커만 이동) -->
+          <div id="section-map" class="rounded-2xl lg:rounded-3xl p-3.5 sm:p-5 flex flex-col items-center w-full bg-slate-900/90 lg:bg-gray-900/78 backdrop-blur-xl border border-slate-700/80 shadow-xl">
+            
+            <div class="w-full flex items-center justify-between mb-2.5 border-b border-slate-800 pb-2.5">
+              <div class="flex items-center gap-2">
+                <span id="map-status-dot" class="inline-block w-2.5 h-2.5 rounded-full bg-pink-500 shadow-[0_0_10px_#ec4899] animate-pulse"></span>
+                <h3 class="text-xs sm:text-sm font-black text-slate-100">대한민국 전도 출생 위치</h3>
+              </div>
+              <span id="coord-display" class="text-[11px] sm:text-xs font-mono text-pink-400 font-semibold">37.51°N, 127.05°E</span>
             </div>
-            <span id="coord-display" class="text-[11px] sm:text-xs font-mono text-pink-400 font-semibold">37.51°N, 127.05°E</span>
-          </div>
 
-          <!-- Leaflet 대한민국 전도 고정 지도 컨테이너 (고정 비율 & 마커만 위치 표시) -->
-          <div class="relative w-full h-[360px] sm:h-[420px] bg-slate-950 rounded-2xl border border-slate-700/60 overflow-hidden shadow-2xl">
-            <div id="real-leaflet-map" class="w-full h-full"></div>
-          </div>
+            <!-- Leaflet 대한민국 전도 고정 지도 컨테이너 (고정 비율 & 마커만 위치 표시) -->
+            <div class="relative w-full h-[280px] sm:h-[340px] lg:h-[400px] bg-slate-950 rounded-2xl border border-slate-700/60 overflow-hidden shadow-2xl">
+              <div id="real-leaflet-map" class="w-full h-full"></div>
+            </div>
 
-          <div class="w-full mt-2.5 flex items-center justify-between text-[11px] sm:text-xs text-slate-400 font-medium px-1">
-            <span>🗺️ 대한민국 전도 고정 뷰</span>
-            <span>출생 지점 네온 핀 표시</span>
-          </div>
+            <div class="w-full mt-2.5 flex items-center justify-between text-[11px] sm:text-xs text-slate-400 font-medium px-1">
+              <span>🗺️ 대한민국 전도 고정 뷰</span>
+              <span>출생 지점 네온 핀 표시</span>
+            </div>
 
+          </div>
         </div>
 
         <!-- 최근 환생 기록 (지도의 바로 아래에 배치) -->
