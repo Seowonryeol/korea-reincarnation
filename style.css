@@ -222,3 +222,33 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(236, 72, 153, 0.6);
 }
+
+/* Mobile Usability & Floating Action Bar */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  touch-action: manipulation;
+}
+
+.glass-bottom-bar {
+  background: rgba(8, 12, 22, 0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+  box-shadow: 0 -10px 35px rgba(0, 0, 0, 0.6);
+}
+
+/* Mobile Map Active Animation */
+@media (max-width: 1023px) {
+  #section-map:not(.hidden) {
+    animation: fadeIn 0.25s ease-out;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}

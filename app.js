@@ -264,7 +264,7 @@ function renderResult(region, pool) {
 
 // 환생 실행 함수 (셔플 애니메이션 포함)
 function doReincarnate() {
-  const button = document.getElementById('reincarnate-btn');
+  const buttons = document.querySelectorAll('.btn-reincarnate');
   const cardElement = document.getElementById('result-card');
   const pool = getFilteredRegions();
 
@@ -273,8 +273,10 @@ function doReincarnate() {
     return;
   }
 
-  button.disabled = true;
-  button.classList.add('opacity-75', 'cursor-not-allowed');
+  buttons.forEach(btn => {
+    btn.disabled = true;
+    btn.classList.add('opacity-75', 'cursor-not-allowed');
+  });
   cardElement.classList.add('animating-result');
 
   let shuffleCount = 0;
@@ -300,8 +302,10 @@ function doReincarnate() {
       });
       updateHistoryUI();
 
-      button.disabled = false;
-      button.classList.remove('opacity-75', 'cursor-not-allowed');
+      buttons.forEach(btn => {
+        btn.disabled = false;
+        btn.classList.remove('opacity-75', 'cursor-not-allowed');
+      });
       cardElement.classList.remove('animating-result');
     }
   }, 45);
@@ -325,15 +329,16 @@ function updateHistoryUI() {
   }
 }
 
-// 결과 클립보드 복사
-function copyResultText() {
+// 결과 공유 및 클립보드 복사 (Web Share API 지원)
+async function shareOrCopyResult() {
   if (!currentRegion) return;
   const pool = getFilteredRegions();
   const { percentage, oneInX } = calculateChance(currentRegion, pool);
   const popShare = calculatePopulationShare(currentRegion.population);
 
   const modeText = calculationMode === 'birth' ? '출생아 수 기준' : '등록 인구수 기준';
-  const textToCopy = `[대한민국 랜덤 다시 태어나기 (${modeText})]\n` +
+  const shareTitle = `[대한민국 랜덤 다시 태어나기] ${currentRegion.province} ${currentRegion.city}`;
+  const shareText = `[대한민국 랜덤 다시 태어나기 (${modeText})]\n` +
     `당신은 ${currentRegion.province} ${currentRegion.city}에서 다시 태어났습니다.\n\n` +
     `"${currentRegion.description}"\n\n` +
     `👥 인구: 약 ${(currentRegion.population / 10000).toFixed(1)}만 명 (전국의 ${popShare}%)\n` +
@@ -341,18 +346,72 @@ function copyResultText() {
     currentRegion.stats.map(s => `📊 ${s.label}: ${s.value}`).join('\n') +
     `\n\n나도 다시 태어나보기: ${window.location.href}`;
 
-  navigator.clipboard.writeText(textToCopy).then(() => {
-    const copyBtn = document.getElementById('copy-btn');
-    const originalHtml = copyBtn.innerHTML;
-    copyBtn.innerHTML = `✓ 복사 완료!`;
-    copyBtn.classList.add('bg-emerald-600', 'text-white', 'border-emerald-500');
-    setTimeout(() => {
-      copyBtn.innerHTML = originalHtml;
-      copyBtn.classList.remove('bg-emerald-600', 'text-white', 'border-emerald-500');
-    }, 2000);
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: shareTitle,
+        text: shareText,
+        url: window.location.href
+      });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return; // 사용자가 공유창을 닫은 경우 무시
+    }
+  }
+
+  // Web Share 미지원 시 클립보드 복사 폴백
+  navigator.clipboard.writeText(shareText).then(() => {
+    const shareBtns = document.querySelectorAll('.btn-share');
+    shareBtns.forEach(btn => {
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = `✓ 복사 완료!`;
+      btn.classList.add('bg-emerald-600', 'text-white', 'border-emerald-500');
+      setTimeout(() => {
+        btn.innerHTML = originalHtml;
+        btn.classList.remove('bg-emerald-600', 'text-white', 'border-emerald-500');
+      }, 2000);
+    });
   }).catch(err => {
     console.error('복사 실패:', err);
     alert('클립보드 복사에 실패했습니다.');
+  });
+}
+
+// 모바일 전용 탭 전환 설정 (환생 결과 카드 ↔ 실제 지도)
+function setupMobileTabs() {
+  const tabCard = document.getElementById('mob-tab-card');
+  const tabMap = document.getElementById('mob-tab-map');
+  const sectionCard = document.getElementById('section-card');
+  const sectionMap = document.getElementById('section-map');
+
+  if (!tabCard || !tabMap || !sectionCard || !sectionMap) return;
+
+  tabCard.addEventListener('click', () => {
+    tabCard.className = 'flex-1 py-1.5 text-xs font-black rounded-lg bg-pink-600 text-white transition-all flex items-center justify-center gap-1';
+    tabMap.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center gap-1';
+    
+    sectionCard.classList.remove('hidden');
+    sectionMap.classList.add('hidden');
+    sectionMap.classList.remove('flex');
+  });
+
+  tabMap.addEventListener('click', () => {
+    tabMap.className = 'flex-1 py-1.5 text-xs font-black rounded-lg bg-pink-600 text-white transition-all flex items-center justify-center gap-1';
+    tabCard.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center gap-1';
+    
+    sectionCard.classList.add('hidden');
+    sectionMap.classList.remove('hidden');
+    sectionMap.classList.add('flex');
+
+    // 지도가 표시될 때 Leaflet 크기 재계산
+    setTimeout(() => {
+      if (leafletMap) {
+        leafletMap.invalidateSize();
+        if (currentRegion) {
+          leafletMap.setView([currentRegion.coords.lat, currentRegion.coords.lng], 10, { animate: false });
+        }
+      }
+    }, 100);
   });
 }
 
@@ -361,11 +420,19 @@ window.addEventListener('DOMContentLoaded', () => {
   // 1. Leaflet 실제 지도 초기화
   initRealLeafletMap();
 
-  // 2. 초기 환생 1회 실행
+  // 2. 모바일 탭 스위처 초기화
+  setupMobileTabs();
+
+  // 3. 초기 환생 1회 실행
   doReincarnate();
 
-  document.getElementById('reincarnate-btn').addEventListener('click', doReincarnate);
-  document.getElementById('copy-btn').addEventListener('click', copyResultText);
+  // 환생 & 공유 버튼 리스너 (데스크톱 및 모바일 하단 플로팅 바 동시 바인딩)
+  document.querySelectorAll('.btn-reincarnate').forEach(btn => {
+    btn.addEventListener('click', doReincarnate);
+  });
+  document.querySelectorAll('.btn-share').forEach(btn => {
+    btn.addEventListener('click', shareOrCopyResult);
+  });
 
   // 스페이스바 단축키
   window.addEventListener('keydown', (e) => {
