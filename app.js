@@ -108,9 +108,16 @@ function initRealLeafletMap() {
   // 독도 및 주요 도서 지역이 화면에 잘 보이도록 기본 바운드 설정 가능
   document.getElementById('reset-map-btn')?.addEventListener('click', () => {
     if (leafletMap) {
-      leafletMap.flyTo([KOREA_CENTER_LAT, KOREA_CENTER_LNG], KOREA_DEFAULT_ZOOM, {
-        duration: 0.8
-      });
+      const mapContainer = document.getElementById('real-leaflet-map');
+      const isVisible = mapContainer && mapContainer.clientWidth > 0 && mapContainer.clientHeight > 0;
+      if (isVisible) {
+        leafletMap.invalidateSize();
+        leafletMap.flyTo([KOREA_CENTER_LAT, KOREA_CENTER_LNG], KOREA_DEFAULT_ZOOM, {
+          duration: 0.8
+        });
+      } else {
+        leafletMap.setView([KOREA_CENTER_LAT, KOREA_CENTER_LNG], KOREA_DEFAULT_ZOOM);
+      }
     }
   });
 }
@@ -119,7 +126,7 @@ function initRealLeafletMap() {
  * 실제 지리 지도 상에 환생 지자체 마커 갱신 및 카메라 이동
  */
 function updateLeafletMapPin(region, shouldFly = true) {
-  if (!leafletMap || !window.L || !region.lat || !region.lng) return;
+  if (!leafletMap || !window.L || typeof region?.lat !== 'number' || typeof region?.lng !== 'number' || isNaN(region.lat) || isNaN(region.lng)) return;
 
   const coordDisplay = document.getElementById('coord-display');
   const statusDot = document.getElementById('map-status-dot');
@@ -135,7 +142,11 @@ function updateLeafletMapPin(region, shouldFly = true) {
 
   // 이전 마커 제거
   if (currentMapMarker) {
-    leafletMap.removeLayer(currentMapMarker);
+    try {
+      leafletMap.removeLayer(currentMapMarker);
+    } catch (e) {
+      console.warn('Marker removal error:', e);
+    }
   }
 
   // 실제 지리 좌표에 꽂히는 커스텀 네온 펄스 HTML 마커 생성
@@ -158,12 +169,28 @@ function updateLeafletMapPin(region, shouldFly = true) {
   // 실제 WGS84 GPS 좌표에 마커 추가
   currentMapMarker = L.marker([region.lat, region.lng], { icon: customIcon }).addTo(leafletMap);
 
-  // 부드러운 지도 카메라 연출 (줌 레벨 8~9로 부드럽게 집중 이동)
-  if (shouldFly) {
-    leafletMap.flyTo([region.lat, region.lng], 8.5, {
-      duration: 1.0,
-      easeLinearity: 0.25
-    });
+  // 지도 컨테이너가 실제로 화면에 렌더링 중(크기 > 0)인지 확인
+  // 모바일 탭 등으로 display: none 상태일 때 flyTo를 호출하면 0x0 뷰포트로 인해 LatLng (NaN, NaN) 에러 발생
+  const mapContainer = document.getElementById('real-leaflet-map');
+  const isMapVisible = mapContainer && mapContainer.clientWidth > 0 && mapContainer.clientHeight > 0;
+
+  if (isMapVisible) {
+    leafletMap.invalidateSize();
+    if (shouldFly) {
+      leafletMap.flyTo([region.lat, region.lng], 8.5, {
+        duration: 1.0,
+        easeLinearity: 0.25
+      });
+    } else {
+      leafletMap.setView([region.lat, region.lng], 8.5);
+    }
+  } else {
+    // 숨겨진 상태에서는 애니메이션 없이 좌표만 설정
+    try {
+      leafletMap.setView([region.lat, region.lng], 8.5, { animate: false });
+    } catch (e) {
+      // ignore
+    }
   }
 }
 
@@ -403,12 +430,12 @@ function setupMobileTabs() {
     sectionMap.classList.remove('hidden');
     sectionMap.classList.add('flex');
 
-    // 지도가 표시될 때 Leaflet 크기 재계산
+    // 지도가 표시될 때 Leaflet 크기 재계산 및 현재 환생 위치로 센터링
     setTimeout(() => {
       if (leafletMap) {
         leafletMap.invalidateSize();
-        if (currentRegion) {
-          leafletMap.setView([currentRegion.coords.lat, currentRegion.coords.lng], 10, { animate: false });
+        if (currentRegion && typeof currentRegion.lat === 'number' && typeof currentRegion.lng === 'number') {
+          leafletMap.setView([currentRegion.lat, currentRegion.lng], 8.5, { animate: false });
         }
       }
     }, 100);
