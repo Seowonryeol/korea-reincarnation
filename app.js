@@ -80,52 +80,53 @@ function calculatePopulationShare(population) {
   return ((population / TOTAL_KOREA_POPULATION) * 100).toFixed(2);
 }
 
+// 대한민국 전도 (제주도 마라도부터 강원 고성, 백령도부터 독도까지) 바운드
+const KOREA_BOUNDS = [
+  [33.0, 124.6], // 남서쪽 (마라도/제주도 남단 및 백령도 서단 여백)
+  [38.5, 131.9]  // 북동쪽 (휴전선 고성 북단 및 독도 동단 여백)
+];
+
 /**
- * Leaflet.js 실제 지도 초기화 함수
+ * Leaflet.js 대한민국 전도 고정 지도 초기화 함수
  */
 function initRealLeafletMap() {
   const mapContainer = document.getElementById('real-leaflet-map');
   if (!mapContainer || !window.L) return;
 
-  // Leaflet 지도 생성 (대한민국 전도 포커스)
+  // Leaflet 대한민국 전도 고정 지도 생성 (지도 자체는 고정, 마커만 움직임)
   leafletMap = L.map('real-leaflet-map', {
-    center: [KOREA_CENTER_LAT, KOREA_CENTER_LNG],
-    zoom: KOREA_DEFAULT_ZOOM,
-    minZoom: 6,
-    maxZoom: 14,
-    zoomControl: true,
-    attributionControl: true
+    zoomControl: false,
+    dragging: false,
+    touchZoom: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false,
+    boxZoom: false,
+    keyboard: false,
+    attributionControl: false
   });
 
   // 실제 전세계/대한민국 표준 다크 타일레이어 (CartoDB DarkMatter)
-  // 실제 지형, 섬(독도, 울릉도, 제주도), 리아스식 해안선, 도로망 100% 정밀 제공
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
     subdomains: 'abcd',
     maxZoom: 19
   }).addTo(leafletMap);
 
-  // 독도 및 주요 도서 지역이 화면에 잘 보이도록 기본 바운드 설정 가능
-  document.getElementById('reset-map-btn')?.addEventListener('click', () => {
+  // 대한민국 전체(서울~제주, 독도)가 한눈에 들어오도록 뷰포트 고정
+  leafletMap.fitBounds(KOREA_BOUNDS, { padding: [8, 8] });
+
+  // 창 크기 변경 시에도 대한민국 전도 비율 유지
+  window.addEventListener('resize', () => {
     if (leafletMap) {
-      const mapContainer = document.getElementById('real-leaflet-map');
-      const isVisible = mapContainer && mapContainer.clientWidth > 0 && mapContainer.clientHeight > 0;
-      if (isVisible) {
-        leafletMap.invalidateSize();
-        leafletMap.flyTo([KOREA_CENTER_LAT, KOREA_CENTER_LNG], KOREA_DEFAULT_ZOOM, {
-          duration: 0.8
-        });
-      } else {
-        leafletMap.setView([KOREA_CENTER_LAT, KOREA_CENTER_LNG], KOREA_DEFAULT_ZOOM);
-      }
+      leafletMap.invalidateSize();
+      leafletMap.fitBounds(KOREA_BOUNDS, { padding: [8, 8] });
     }
   });
 }
 
 /**
- * 실제 지리 지도 상에 환생 지자체 마커 갱신 및 카메라 이동
+ * 실제 지리 지도 상에 환생 지자체 마커 갱신 (지도는 고정, 마커만 이동)
  */
-function updateLeafletMapPin(region, shouldFly = true) {
+function updateLeafletMapPin(region) {
   if (!leafletMap || !window.L || typeof region?.lat !== 'number' || typeof region?.lng !== 'number' || isNaN(region.lat) || isNaN(region.lng)) return;
 
   const coordDisplay = document.getElementById('coord-display');
@@ -140,16 +141,7 @@ function updateLeafletMapPin(region, shouldFly = true) {
     statusDot.style.boxShadow = `0 0 10px ${accentColor}`;
   }
 
-  // 이전 마커 제거
-  if (currentMapMarker) {
-    try {
-      leafletMap.removeLayer(currentMapMarker);
-    } catch (e) {
-      console.warn('Marker removal error:', e);
-    }
-  }
-
-  // 실제 지리 좌표에 꽂히는 커스텀 네온 펄스 HTML 마커 생성
+  // 지도는 대한민국 전체 뷰로 고정된 상태에서, 출생 지점 핀(마커)만 이동
   const customIcon = L.divIcon({
     className: 'custom-leaflet-pin',
     html: `
@@ -166,31 +158,11 @@ function updateLeafletMapPin(region, shouldFly = true) {
     iconAnchor: [0, 0]
   });
 
-  // 실제 WGS84 GPS 좌표에 마커 추가
-  currentMapMarker = L.marker([region.lat, region.lng], { icon: customIcon }).addTo(leafletMap);
-
-  // 지도 컨테이너가 실제로 화면에 렌더링 중(크기 > 0)인지 확인
-  // 모바일 탭 등으로 display: none 상태일 때 flyTo를 호출하면 0x0 뷰포트로 인해 LatLng (NaN, NaN) 에러 발생
-  const mapContainer = document.getElementById('real-leaflet-map');
-  const isMapVisible = mapContainer && mapContainer.clientWidth > 0 && mapContainer.clientHeight > 0;
-
-  if (isMapVisible) {
-    leafletMap.invalidateSize();
-    if (shouldFly) {
-      leafletMap.flyTo([region.lat, region.lng], 8.5, {
-        duration: 1.0,
-        easeLinearity: 0.25
-      });
-    } else {
-      leafletMap.setView([region.lat, region.lng], 8.5);
-    }
+  if (currentMapMarker) {
+    currentMapMarker.setLatLng([region.lat, region.lng]);
+    currentMapMarker.setIcon(customIcon);
   } else {
-    // 숨겨진 상태에서는 애니메이션 없이 좌표만 설정
-    try {
-      leafletMap.setView([region.lat, region.lng], 8.5, { animate: false });
-    } catch (e) {
-      // ignore
-    }
+    currentMapMarker = L.marker([region.lat, region.lng], { icon: customIcon }).addTo(leafletMap);
   }
 }
 
@@ -229,6 +201,17 @@ function renderResult(region, pool) {
   titleProvince.innerText = region.province;
   titleCity.innerText = region.city;
   description.innerText = region.description;
+
+  // 상단 스크롤 고정 바 갱신 (출생지역, 소속자치단체, 희귀도만 표시)
+  const stickyProvince = document.getElementById('sticky-province');
+  const stickyCity = document.getElementById('sticky-city');
+  const stickyRarity = document.getElementById('sticky-rarity');
+  if (stickyProvince) stickyProvince.innerText = region.province;
+  if (stickyCity) stickyCity.innerText = region.city;
+  if (stickyRarity) {
+    stickyRarity.className = `px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-black tracking-wider shadow-sm ${rarityClasses[region.rarity] || 'badge-common'}`;
+    stickyRarity.innerText = region.rarity === 'SSR' ? '🌟 SSR' : region.rarity === 'SR' ? '✨ SR' : region.rarity === 'R' ? '🔷 R' : '⚪ 흔함';
+  }
 
   // 태그 렌더링
   tagsContainer.innerHTML = region.tags.map(t => 
@@ -404,42 +387,26 @@ async function shareOrCopyResult() {
   });
 }
 
-// 모바일 전용 탭 전환 설정 (환생 결과 카드 ↔ 실제 지도)
-function setupMobileTabs() {
-  const tabCard = document.getElementById('mob-tab-card');
-  const tabMap = document.getElementById('mob-tab-map');
-  const sectionCard = document.getElementById('section-card');
-  const sectionMap = document.getElementById('section-map');
+// 스크롤 시 상단 고정 출생지 바 제어 (소속 자치단체, 출생지역, 희귀도만 표시)
+function setupStickyHeader() {
+  const stickyHeader = document.getElementById('sticky-header');
+  const cityTitle = document.getElementById('res-city');
+  if (!stickyHeader || !cityTitle) return;
 
-  if (!tabCard || !tabMap || !sectionCard || !sectionMap) return;
-
-  tabCard.addEventListener('click', () => {
-    tabCard.className = 'flex-1 py-1.5 text-xs font-black rounded-lg bg-pink-600 text-white transition-all flex items-center justify-center gap-1';
-    tabMap.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center gap-1';
-    
-    sectionCard.classList.remove('hidden');
-    sectionMap.classList.add('hidden');
-    sectionMap.classList.remove('flex');
-  });
-
-  tabMap.addEventListener('click', () => {
-    tabMap.className = 'flex-1 py-1.5 text-xs font-black rounded-lg bg-pink-600 text-white transition-all flex items-center justify-center gap-1';
-    tabCard.className = 'flex-1 py-1.5 text-xs font-bold rounded-lg text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center gap-1';
-    
-    sectionCard.classList.add('hidden');
-    sectionMap.classList.remove('hidden');
-    sectionMap.classList.add('flex');
-
-    // 지도가 표시될 때 Leaflet 크기 재계산 및 현재 환생 위치로 센터링
-    setTimeout(() => {
-      if (leafletMap) {
-        leafletMap.invalidateSize();
-        if (currentRegion && typeof currentRegion.lat === 'number' && typeof currentRegion.lng === 'number') {
-          leafletMap.setView([currentRegion.lat, currentRegion.lng], 8.5, { animate: false });
-        }
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      // 결과 카드의 지명이 화면 상단 밖으로 스크롤되어 지나갔을 때 표시
+      if (!entry.isIntersecting && entry.boundingClientRect.top < 0) {
+        stickyHeader.classList.remove('-translate-y-full', 'opacity-0', 'pointer-events-none');
+        stickyHeader.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
+      } else {
+        stickyHeader.classList.add('-translate-y-full', 'opacity-0', 'pointer-events-none');
+        stickyHeader.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
       }
-    }, 100);
-  });
+    });
+  }, { threshold: 0 });
+
+  observer.observe(cityTitle);
 }
 
 // 초기화
@@ -447,8 +414,8 @@ window.addEventListener('DOMContentLoaded', () => {
   // 1. Leaflet 실제 지도 초기화
   initRealLeafletMap();
 
-  // 2. 모바일 탭 스위처 초기화
-  setupMobileTabs();
+  // 2. 상단 고정 출생지 바 스크롤 감지 초기화
+  setupStickyHeader();
 
   // 3. 초기 환생 1회 실행
   doReincarnate();
