@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>대한민국 랜덤 다시 태어나기 | Random Reincarnation Korea</title>
+  
+  <meta property="og:title" content="대한민국 랜덤 다시 태어나기">
+  <meta property="og:description" content="내가 지금 대한민국에서 다시 태어난다면 어디서 태어날까? 출생아 수 & 인구 기준 현실 가중치 환생 시뮬레이터!">
+  <meta property="og:type" content="website">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Leaflet.js (실제 정밀 지리 지도 라이브러리) CDN -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body class="flex flex-col min-h-screen text-slate-100 selection:bg-pink-500 selection:text-white pb-12">
+
+  <!-- Background Animated Ambient Light -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+    <div id="ambient-glow" class="absolute -top-40 left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-gradient-to-tr from-indigo-600/30 via-purple-600/25 to-pink-600/30 blur-[130px] rounded-full transition-all duration-700"></div>
+  </div>
+
+  <!-- Top Header Section -->
+  <header class="w-full max-w-6xl mx-auto pt-8 pb-3 px-4 text-center">
+    
+    <!-- Top Notice Pill -->
+    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/90 border border-slate-700/80 text-xs font-semibold text-pink-300 mb-3.5 shadow-lg shadow-purple-950/40 backdrop-blur-md">
+      <span class="inline-block w-2 h-2 rounded-full bg-pink-400 animate-ping"></span>
+      <span id="mode-indicator">👶 대한민국 전국 228개 모든 시·군·구 전수 수록 (통계청 출생 통계 가중치)</span>
+    </div>
+    
+    <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight gradient-title mb-3">
+      대한민국 랜덤 다시 태어나기
+    </h1>
+    <p class="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto font-medium">
+      내가 지금 대한민국에서 다시 태어난다면 어떤 지역에서 어떤 삶을 시작하게 될까요?
+    </p>
+
+    <!-- Controls Container (모드 토글 & 필터 탭) -->
+    <div class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3.5 max-w-3xl mx-auto">
+      
+      <!-- 1. 계산 기준 선택 (출생아 vs 인구) -->
+      <div class="flex items-center p-1.5 bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-700/80 w-full sm:w-auto shadow-xl">
+        <button data-mode="birth" class="mode-btn flex-1 sm:flex-initial px-4 py-2 text-xs sm:text-sm font-black rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg shadow-pink-500/30 transition-all flex items-center justify-center gap-1.5">
+          <span>👶 출생아 기준</span>
+          <span class="text-[11px] opacity-90 hidden md:inline">(신생아 확률)</span>
+        </button>
+        <button data-mode="population" class="mode-btn flex-1 sm:flex-initial px-4 py-2 text-xs sm:text-sm font-bold rounded-xl text-slate-400 hover:text-slate-200 transition-all flex items-center justify-center gap-1.5">
+          <span>👥 인구 기준</span>
+          <span class="text-[11px] opacity-80 hidden md:inline">(국민 중 1명)</span>
+        </button>
+      </div>
+
+      <!-- 2. 지역 범위 필터 -->
+      <div class="flex items-center p-1.5 bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-700/80 w-full sm:w-auto shadow-xl">
+        <button data-filter="all" class="filter-btn flex-1 sm:flex-initial px-3.5 py-2 text-xs sm:text-sm font-bold rounded-xl bg-slate-800 text-white shadow transition-all border border-slate-600/50">전국 전체</button>
+        <button data-filter="non-capital" class="filter-btn flex-1 sm:flex-initial px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl text-slate-400 hover:text-slate-200 transition-all">비수도권만</button>
+        <button data-filter="rural-only" class="filter-btn flex-1 sm:flex-initial px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl text-slate-400 hover:text-slate-200 transition-all">소도시/시골만</button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Content: 화면의 2/3 수준을 차지하는 2열 와이드 뷰 (max-w-6xl) -->
+  <main class="flex-1 w-full max-w-6xl mx-auto px-4 lg:px-6 mt-4">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- [좌측 7열]: 환생 결과 카드 및 상세 통계 -->
+      <div class="lg:col-span-7 flex flex-col gap-4">
+        
+        <div id="result-card" class="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden transition-all duration-300">
+          
+          <!-- 카드 상단 은은한 네온 악센트 바 -->
+          <div id="card-top-glow" class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500"></div>
+
+          <!-- Top Info Bar -->
+          <div class="flex items-center justify-between gap-2 border-b border-slate-700/60 pb-4 mb-5">
+            <div class="flex items-center gap-2.5">
+              <span id="res-province" class="text-xs sm:text-sm font-bold px-3 py-1 rounded-lg bg-indigo-950/90 text-indigo-300 border border-indigo-500/30">
+                서울특별시
+              </span>
+              <span id="res-rarity" class="px-3 py-1 rounded-full text-xs font-black tracking-wider shadow-md">
+                ⚪ 흔함 (Common)
+              </span>
+            </div>
+            <div class="flex items-center gap-1.5 text-xs sm:text-sm text-slate-400 font-medium">
+              <span>환생</span>
+              <span id="reincarnation-count" class="font-black text-white text-base bg-slate-800/90 px-2 py-0.5 rounded-md border border-slate-700">1</span>회차
+            </div>
+          </div>
+
+          <!-- City Main Title -->
+          <div class="mb-4">
+            <p class="text-xs sm:text-sm font-semibold text-slate-400 mb-1">당신은 다음 지역에서 다시 태어났습니다:</p>
+            <h2 id="res-city" class="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white flex items-center gap-2">
+              강남구
+            </h2>
+          </div>
+
+          <!-- Description Box -->
+          <div class="bg-slate-900/80 rounded-2xl p-4 sm:p-5 border border-slate-700/70 mb-5 relative shadow-inner">
+            <p id="res-description" class="text-sm sm:text-base text-slate-200 leading-relaxed font-medium">
+              대한민국 사교육의 1번지 대치동과 테헤란로 빌딩 숲, 화려한 인프라와 숨 막히는 입시 경쟁이 공존하는 곳입니다.
+            </p>
+          </div>
+
+          <!-- Stats Grid -->
+          <div id="res-stats" class="space-y-2.5 mb-6">
+            <!-- JS 동적 렌더링 -->
+          </div>
+
+          <!-- Tags -->
+          <div id="res-tags" class="flex flex-wrap gap-2 mb-6">
+            <!-- JS 동적 렌더링 -->
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-col sm:flex-row gap-3 pt-2">
+            <button id="reincarnate-btn" class="flex-1 py-4 px-6 rounded-2xl font-black text-base lg:text-lg bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:from-pink-600 hover:via-purple-700 hover:to-indigo-700 text-white shadow-xl shadow-pink-500/25 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5">
+              <span>다시 태어나기</span>
+              <span class="text-xs opacity-80 font-normal hidden sm:inline">(Space)</span>
+            </button>
+            <button id="copy-btn" class="py-4 px-6 rounded-2xl font-bold text-sm sm:text-base bg-slate-800/90 hover:bg-slate-700 border border-slate-600 text-slate-100 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-md">
+              <span>결과 공유 복사</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- 최근 환생 기록 -->
+        <div id="history-section" class="glass-card rounded-2xl p-4 sm:p-5 hidden">
+          <div class="flex items-center justify-between mb-2.5 pb-2 border-b border-slate-800">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <span>📜</span> 최근 환생 이력
+            </span>
+            <span class="text-[11px] text-slate-500">최근 6건 기록</span>
+          </div>
+          <div id="history-list" class="space-y-1.5"></div>
+        </div>
+
+      </div>
+
+      <!-- [우측 5열]: 실제 대한민국 실제 정밀 지도 (Leaflet.js) -->
+      <div class="lg:col-span-5 flex flex-col gap-4">
+        <div class="glass-card rounded-3xl p-5 sm:p-6 flex flex-col items-center">
+          
+          <div class="w-full flex items-center justify-between mb-3 border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2.5">
+              <span id="map-status-dot" class="inline-block w-3 h-3 rounded-full bg-pink-500 shadow-[0_0_10px_#ec4899] animate-pulse"></span>
+              <h3 class="text-sm font-black text-slate-100">대한민국 실제 지리 지도</h3>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="coord-display" class="text-xs font-mono text-pink-400 font-semibold">37.51°N, 127.05°E</span>
+              <button id="reset-map-btn" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-all">전도 보기</button>
+            </div>
+          </div>
+
+          <!-- Leaflet 인터랙티브 실제 지도 컨테이너 -->
+          <div class="relative w-full max-w-[440px] aspect-[4/5] bg-slate-950 rounded-2xl border border-slate-700/60 overflow-hidden shadow-2xl">
+            <div id="real-leaflet-map" class="w-full h-full"></div>
+          </div>
+
+          <div class="w-full mt-3.5 flex items-center justify-between text-xs text-slate-400 font-medium px-1">
+            <span>🗺️ 실제 한반도 해안선·지형 기반 지도</span>
+            <span>마우스 휠로 줌 가능</span>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full max-w-6xl mx-auto py-8 px-4 text-center text-xs text-slate-500">
+    <p>본 시뮬레이터는 통계청 최근 기초지자체별 출생아 수 및 주민등록 인구 통계를 기반으로 제작되었습니다.</p>
+    <p class="mt-1">Powered by Leaflet.js & OpenStreetMap CartoDB Dark · Made for Fun</p>
+  </footer>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

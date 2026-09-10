@@ -1,0 +1,224 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+:root {
+  --bg-color: #080c16;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+}
+
+body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  background-color: var(--bg-color);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.16) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.16) 0px, transparent 50%),
+    radial-gradient(at 50% 100%, rgba(14, 165, 233, 0.14) 0px, transparent 50%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  color: var(--text-primary);
+  margin: 0;
+  overflow-x: hidden;
+}
+
+/* Glassmorphism Card Enhanced */
+.glass-card {
+  background: rgba(17, 24, 39, 0.78);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 25px -5px rgba(99, 102, 241, 0.1);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.8), 0 0 30px -5px rgba(236, 72, 153, 0.15);
+}
+
+/* Rarity Badges */
+.badge-ssr {
+  background: linear-gradient(135deg, #f59e0b, #ef4444, #ec4899);
+  color: #fff;
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.6);
+  animation: pulse-glow 2s infinite alternate;
+}
+
+.badge-sr {
+  background: linear-gradient(135deg, #8b5cf6, #ec4899);
+  color: #fff;
+  box-shadow: 0 0 14px rgba(139, 92, 246, 0.5);
+}
+
+.badge-r {
+  background: linear-gradient(135deg, #0284c7, #3b82f6);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.4);
+}
+
+.badge-common {
+  background: linear-gradient(135deg, #475569, #334155);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 28px rgba(236, 72, 153, 0.9);
+  }
+}
+
+/* Reincarnation Animation */
+@keyframes shake-and-roll {
+  0% { transform: scale(1) translateY(0); opacity: 1; }
+  25% { transform: scale(0.98) translateY(-4px); filter: blur(1px); opacity: 0.85; }
+  50% { transform: scale(1.01) translateY(3px); filter: blur(2px); opacity: 0.7; }
+  75% { transform: scale(0.99) translateY(-1px); filter: blur(1px); opacity: 0.9; }
+  100% { transform: scale(1) translateY(0); filter: blur(0px); opacity: 1; }
+}
+
+.animating-result {
+  animation: shake-and-roll 0.45s ease-in-out;
+}
+
+/* Gradient Title */
+.gradient-title {
+  background: linear-gradient(135deg, #38bdf8 0%, #a855f7 50%, #ec4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ==================================================== */
+/* Leaflet.js 커스텀 네온 다크 스타일 */
+/* ==================================================== */
+.leaflet-container {
+  background: #090d16 !important;
+  font-family: inherit !important;
+}
+
+/* Leaflet 타일맵 부드러운 다크 색조 조정 */
+.leaflet-tile-pane {
+  filter: brightness(0.95) contrast(1.1) saturate(1.15);
+}
+
+/* Leaflet 줌 컨트롤 다크 스타일 */
+.leaflet-bar {
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+}
+
+.leaflet-bar a {
+  background-color: rgba(15, 23, 42, 0.9) !important;
+  color: #cbd5e1 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: #1e293b !important;
+  color: #fff !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(15, 23, 42, 0.7) !important;
+  color: #64748b !important;
+  font-size: 10px !important;
+  border-radius: 4px;
+}
+
+.leaflet-control-attribution a {
+  color: #94a3b8 !important;
+}
+
+/* 커스텀 네온 펄스 마커 (L.divIcon) */
+.custom-leaflet-pin {
+  background: transparent;
+  border: none;
+}
+
+.pin-inner-wrapper {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+}
+
+.pin-core-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  border: 2.5px solid #ffffff;
+  position: relative;
+  z-index: 10;
+  box-shadow: 0 0 15px currentColor;
+}
+
+.pin-pulse-wave {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background-color: currentColor;
+  opacity: 0.8;
+  animation: leaflet-radar 1.8s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+.pin-pulse-wave-delayed {
+  animation-delay: 0.6s;
+}
+
+@keyframes leaflet-radar {
+  0% {
+    width: 14px;
+    height: 14px;
+    opacity: 0.9;
+  }
+  100% {
+    width: 80px;
+    height: 80px;
+    opacity: 0;
+  }
+}
+
+.pin-floating-badge {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: rgba(3, 7, 18, 0.95);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 11px;
+  font-weight: 800;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(11, 15, 25, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(236, 72, 153, 0.6);
+}
