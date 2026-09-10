@@ -80,10 +80,11 @@ function calculatePopulationShare(population) {
   return ((population / TOTAL_KOREA_POPULATION) * 100).toFixed(2);
 }
 
-// 대한민국 전도 (제주도 마라도부터 강원 고성, 백령도부터 독도까지) 바운드
+// 남한 중심 최적 확대 바운드 (중국·일본 본토 제외, 제주도·독도 완벽 포함)
+// 제주 마라도(33.11°N), 강원 고성 DMZ(38.61°N), 백령도(124.63°E), 독도(131.87°E)
 const KOREA_BOUNDS = [
-  [33.0, 124.6], // 남서쪽 (마라도/제주도 남단 및 백령도 서단 여백)
-  [38.5, 131.9]  // 북동쪽 (휴전선 고성 북단 및 독도 동단 여백)
+  [33.00, 125.0], // 남서단: 제주도 마라도 남단 여백 및 서해
+  [38.65, 132.1]  // 북동단: 휴전선 고성 북단 및 독도 동단 여백
 ];
 
 /**
@@ -96,6 +97,8 @@ function initRealLeafletMap() {
   // Leaflet 대한민국 전도 고정 지도 생성 (지도 자체는 고정, 마커만 움직임)
   leafletMap = L.map('real-leaflet-map', {
     zoomControl: false,
+    zoomSnap: 0.05, // 소수점 정밀 줌을 지원하여 대한민국 전도가 화면에 여백 없이 꽉 차게 확대
+    zoomDelta: 0.1,
     dragging: false,
     touchZoom: false,
     scrollWheelZoom: false,
@@ -111,15 +114,15 @@ function initRealLeafletMap() {
     maxZoom: 19
   }).addTo(leafletMap);
 
-  // 대한민국 전체(서울~제주, 독도)가 한눈에 들어오도록 뷰포트 고정
-  leafletMap.fitBounds(KOREA_BOUNDS, { padding: [8, 8] });
+  // 대한민국 남한 전체(서울~제주도, 독도)가 꽉 차도록 최적 확대 뷰포트 고정
+  leafletMap.fitBounds(KOREA_BOUNDS, { padding: [4, 4] });
 
   // 창 크기 변경 시 지도 위치(모바일 슬롯 vs 데스크톱 슬롯) 및 전도 뷰포트 갱신
   window.addEventListener('resize', () => {
     updateMapPlacement();
     if (leafletMap) {
       leafletMap.invalidateSize();
-      leafletMap.fitBounds(KOREA_BOUNDS, { padding: [8, 8] });
+      leafletMap.fitBounds(KOREA_BOUNDS, { padding: [4, 4] });
     }
   });
 }
@@ -144,7 +147,7 @@ function updateMapPlacement() {
     if (leafletMap) {
       setTimeout(() => {
         leafletMap.invalidateSize();
-        leafletMap.fitBounds(KOREA_BOUNDS, { padding: [8, 8] });
+        leafletMap.fitBounds(KOREA_BOUNDS, { padding: [4, 4] });
       }, 50);
     }
   }
